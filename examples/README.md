@@ -1,22 +1,21 @@
 # Example data
 
-Two real Civil 3D LandXML exports were used to validate this plugin and are
-not bundled in this repository directly because of their size (see below) —
-keep them alongside the plugin (e.g. in a sibling `Sample Landxml/` folder)
-when testing:
+Two real Civil 3D LandXML exports were used to validate this plugin. They're
+not bundled in this repository (see sizes below) — keep them in a sibling
+folder, e.g. `Sample Landxml/`, when testing:
 
 - **Sample bridge realignment.xml** (~45 MB) — 1 alignment
   (2,687.782 m, 8 clothoid spirals, 4 circular curves, 5 tangents), 1 vertical
   profile (1,995 station/elevation pairs), and a TIN surface with 275,175
-  points and 550,206 faces. This is the file referenced in `README.md` under
-  "Sample alignment validation".
+  points and 550,206 faces. Referenced in `README.md` under "Sample
+  alignment validation".
 - **Sample corridor design.xml** (~59 MB) — a multi-surface TIN
   (`BOTTOM`, `TOP`, and an intermediate design surface) plus a ~16.7 km
   design alignment.
 
-If you want to version these files alongside the plugin source, consider
-Git LFS rather than committing them directly — both are within GitHub's
-100 MB hard limit but large enough to bloat a normal repository's history.
+Both are under GitHub's 100 MB limit but big enough to bloat history if
+committed directly — use Git LFS instead to version them alongside the
+source.
 
 ## Suggested workflow
 
