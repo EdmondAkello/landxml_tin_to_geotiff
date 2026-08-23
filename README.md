@@ -2,7 +2,7 @@
 
 Native QGIS Processing provider for engineering interoperability between Civil 3D/LandXML and GIS.
 
-Author: Edmond Akello · License: GPL-2.0-or-later · Current version: 1.4.9
+Author: Edmond Akello · License: GPL-2.0-or-later · Current version: 1.4.11
 
 ## QGIS compatibility
 Tested at the source-code/API level against QGIS 3.44. Uses `QgsProcessingParameterNumber` (with `Double`/`Integer` type) for numeric Processing parameters rather than the QGIS 3.36+-only `QgsProcessingParameterDouble`, for broader compatibility across the QGIS 3.28–3.99 range declared in `metadata.txt`.
