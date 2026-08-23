@@ -1,0 +1,22 @@
+[general]
+name=LandXML Road & Terrain GIS Tools
+qgisMinimumVersion=3.28
+qgisMaximumVersion=3.99
+description=QGIS Processing provider that converts Civil 3D/LandXML terrain and road-design data into native GIS layers: TIN surfaces to GeoTIFF, horizontal alignments, vertical profiles, 3D centerlines, cross-sections, station points, TIN boundaries, feature lines and breaklines, plus a one-click Complete Road Design export to GeoPackage.
+version=1.4.9
+author=Edmond Akello
+email=francenicklaus@gmail.com
+about=Converts LandXML TIN surfaces to GeoTIFF and extracts alignments, vertical profiles, 3D centerlines, cross-sections, station points, TIN boundaries, feature lines and breaklines. Includes a one-click Complete Road Design to GeoPackage export.
+
+    Coordinate interpretation and transformation (stored coordinates, axis swap, offset, 2-D Helmert, or reprojection) are explicit and controlled by the user on every algorithm; the LandXML-declared CRS is shown for reference only and is never trusted automatically. Validated against Civil 3D LandXML exports containing clothoid spirals, circular curves, tangents, vertical profiles and large TIN surfaces (500,000+ faces).
+
+    Licensed under the GNU General Public License version 2 or later.
+repository=https://github.com/edmondakello/landxml-tin-to-geotiff
+tracker=https://github.com/edmondakello/landxml-tin-to-geotiff/issues
+homepage=https://github.com/edmondakello/landxml-tin-to-geotiff
+changelog=See CHANGELOG.md
+experimental=False
+deprecated=False
+tags=LandXML,TIN,DTM,DEM,GeoTIFF,Civil 3D,road design,alignment,profile,cross-section,feature line,breakline,GeoPackage,QGIS,Processing
+category=Vector
+icon=icon.png
