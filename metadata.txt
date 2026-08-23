@@ -11,9 +11,9 @@ about=Converts LandXML TIN surfaces to GeoTIFF and extracts alignments, vertical
     Coordinate interpretation and transformation (stored coordinates, axis swap, offset, 2-D Helmert, or reprojection) are explicit and controlled by the user on every algorithm; the LandXML-declared CRS is shown for reference only and is never trusted automatically. Validated against Civil 3D LandXML exports containing clothoid spirals, circular curves, tangents, vertical profiles and large TIN surfaces (500,000+ faces).
 
     Licensed under the GNU General Public License version 2 or later.
-repository=https://github.com/edmondakello/landxml-tin-to-geotiff
-tracker=https://github.com/edmondakello/landxml-tin-to-geotiff/issues
-homepage=https://github.com/edmondakello/landxml-tin-to-geotiff
+repository=https://github.com/EdmondAkello/landxml_tin_to_geotiff
+tracker=https://github.com/EdmondAkello/landxml_tin_to_geotiff/issues
+homepage=https://github.com/EdmondAkello/landxml_tin_to_geotiff
 changelog=See CHANGELOG.md
 experimental=False
 deprecated=False
