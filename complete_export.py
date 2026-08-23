@@ -1,7 +1,17 @@
 import os, math
 import numpy as np
 from osgeo import ogr, osr, gdal
-from qgis.core import *
+from qgis.core import (
+    QgsCoordinateReferenceSystem,
+    QgsProcessingAlgorithm,
+    QgsProcessingException,
+    QgsProcessingParameterBoolean,
+    QgsProcessingParameterCrs,
+    QgsProcessingParameterEnum,
+    QgsProcessingParameterFile,
+    QgsProcessingParameterFolderDestination,
+    QgsProcessingParameterString,
+)
 from qgis.PyQt.QtCore import QVariant
 from .core import read_tin, transform_vertices, rasterize_tin, write_geotiff, read_vertical_profile
 from .alignment_algorithm import read_alignments
