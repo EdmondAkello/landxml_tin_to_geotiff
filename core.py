@@ -8,22 +8,23 @@ from __future__ import annotations
 
 import math
 import os
-import xml.etree.ElementTree as ET
 
 import numpy as np
 from osgeo import gdal, osr
+
+from . import safe_xml
 
 NS = {"l": "http://www.landxml.org/schema/LandXML-1.2"}
 
 
 def list_surfaces(path):
-    root = ET.parse(path).getroot()
+    root = safe_xml.parse_root(path)
     surfaces = root.findall(".//l:Surfaces/l:Surface", NS)
     return [(s.attrib.get("name", f"Surface {i+1}"), s) for i, s in enumerate(surfaces)]
 
 
 def declared_epsg(path):
-    root = ET.parse(path).getroot()
+    root = safe_xml.parse_root(path)
     cs = root.find("l:CoordinateSystem", NS)
     if cs is None:
         return None
@@ -43,7 +44,7 @@ def _surface_elements(root, surface_name):
 def read_tin(path, surface_name=None, progress=None, cancel=None):
     if progress:
         progress(2, "Parsing LandXML…")
-    root = ET.parse(path).getroot()
+    root = safe_xml.parse_root(path)
     surfaces = root.findall(".//l:Surfaces/l:Surface", NS)
     if not surfaces:
         raise ValueError("No <Surface> elements were found in the LandXML file.")

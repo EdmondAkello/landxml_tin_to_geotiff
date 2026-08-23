@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.10 — 2026-08-23
+
+### Security
+- **Fixed: QGIS Plugin Repository security scan (Bandit) blocked this release for 14 findings of "Using `xml.etree.ElementTree` [`.parse`] to parse untrusted XML data is known to be vulnerable to XML attacks."** Every LandXML file this plugin opens comes from Processing's file-picker parameter — i.e. it is user-supplied, untrusted input, not something the plugin author controls. Plain `xml.etree.ElementTree` inherits CPython's `expat` parser with its default entity-expansion behaviour, so a crafted file (billion-laughs entity bomb, or an external entity reference for XXE) could hang/crash QGIS or read local files before any of the plugin's own code ran. Replaced every `ET.parse(path).getroot()` call site (`core.py`, `alignment_algorithm.py`, `complete_export.py`, `road_features.py`) with a new internal `safe_xml` module that drives `xml.parsers.expat` directly and rejects any DOCTYPE declaration, entity declaration, or external entity reference outright — real LandXML exports never declare any of these, so a file that does is refused with a clear error instead of being parsed. Deliberately does not add `defusedxml` as a dependency (not part of any stock QGIS Python environment, would break the plugin on install); verified byte-identical output against plain `ElementTree` on synthetic data and on real multi-megabyte sample LandXML files, confirmed ~40% slower but correct, and confirmed entity-bomb/XXE/bare-DOCTYPE payloads are rejected while ordinary malformed XML still raises the normal parse error.
+- **Fixed: Bandit "Try, Except, Pass detected" finding in `complete_export.py`.** `_delete_layer()` previously attempted `ds.DeleteLayer(name)` inside a bare `try/except Exception: pass`, silently swallowing any GDAL/OGR error alongside the expected "layer doesn't exist yet" case. Replaced with an explicit `GetLayerByName()` existence check before deleting, so a genuine OGR error is no longer masked.
+
+### Changed
+- **QGIS 4 / PyQt6 compatibility: fixed all "QT6 Check" enum-scoping findings** reported by the plugin repository's `pyqgis4-checker` across `alignment_algorithm.py`, `complete_export.py`, `processing_algorithm.py`, `params.py`, and `road_features.py`. PyQt6 requires fully-scoped enum access (e.g. `QgsWkbTypes.Type.LineString`, `QgsProcessing.SourceType.TypeVectorLine`, `QgsProcessingParameterFile.Behavior.File`, `QgsProcessingParameterNumber.Type.Double`) where PyQt5 accepted the legacy unscoped form; this check is informational rather than blocking for repository approval, but fixed anyway so the plugin loads cleanly under QGIS 4 without relying on PyQt6's temporary backward-compatibility shims.
+
 ## 1.4.9 — 2026-08-23
 
 ### Fixed

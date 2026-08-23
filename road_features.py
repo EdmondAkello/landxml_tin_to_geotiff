@@ -1,4 +1,5 @@
-import os, math, xml.etree.ElementTree as ET
+import os, math
+from . import safe_xml
 from qgis.core import (
     QgsProcessing, QgsProcessingAlgorithm, QgsProcessingParameterFile,
     QgsProcessingParameterCrs, QgsProcessingParameterFeatureSink,
@@ -48,7 +49,7 @@ def _line_chain(points):
 
 def _alignment_parts(path, segment_length=5.0, alignment_filter=""):
 
-    root=ET.parse(path).getroot(); ans=[]
+    root=safe_xml.parse_root(path); ans=[]
     for a in root.findall('.//l:Alignment',NS):
         name=a.attrib.get('name','Alignment'); desc=a.attrib.get('desc','');
         if alignment_filter and name != alignment_filter: continue
@@ -84,15 +85,15 @@ class ProfileAlgorithm(QgsProcessingAlgorithm):
     def groupId(self): return 'road_design_extraction'
     def shortHelpString(self): return 'Extract vertical profile geometry and PVI/grade data into GIS lines and profile points.'
     def initAlgorithm(self,config=None):
-        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self)
+        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.Behavior.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self)
         self.addParameter(QgsProcessingParameterString('PROFILE','Profile name (blank = all)',defaultValue='',optional=True))
         self.addParameter(number_param('POINT_INTERVAL', 'Sampling interval for profile line (m)', 5, .01, 10000, decimals=2))
-        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Profile lines',type=QgsProcessing.TypeVectorLine))
+        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Profile lines',type=QgsProcessing.SourceType.TypeVectorLine))
     def processAlgorithm(self,p,c,fb):
         path=self.parameterAsFile(p,'INPUT',c); m,out,src,tp=_transform_params(p,c,self); alignment_filter=self.parameterAsString(p,'ALIGNMENT',c).strip(); profile_filter=self.parameterAsString(p,'PROFILE',c).strip()
         fields=QgsFields()
         for n in ('alignment','profile','sta_start','sta_end'): fields.append(QgsField(n,QVariant.String,len=254))
-        sink, dest=_sink(self,p,c,fields,QgsWkbTypes.LineString); root=ET.parse(path).getroot(); n=0
+        sink, dest=_sink(self,p,c,fields,QgsWkbTypes.Type.LineString); root=safe_xml.parse_root(path); n=0
         interval=max(self.parameterAsDouble(p,'POINT_INTERVAL',c),.01)
         for prof in root.findall('.//l:ProfAlign',NS):
             if fb.isCanceled(): break
@@ -116,14 +117,14 @@ class Centerline3DAlgorithm(QgsProcessingAlgorithm):
     def groupId(self): return 'road_design_extraction'
     def shortHelpString(self): return 'Creates 3D centerlines by combining horizontal alignment geometry with the matching LandXML vertical profile when available.'
     def initAlgorithm(self,config=None):
-        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self)
+        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.Behavior.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self)
         self.addParameter(number_param('SEGMENT', 'Maximum geometry segment length (m)', 5, .01, 10000, decimals=2))
-        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','3D centerlines',type=QgsProcessing.TypeVectorLine))
+        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','3D centerlines',type=QgsProcessing.SourceType.TypeVectorLine))
     def processAlgorithm(self,p,c,fb):
         path=self.parameterAsFile(p,'INPUT',c); m,out,src,tp=_transform_params(p,c,self); alignment_filter=self.parameterAsString(p,'ALIGNMENT',c).strip(); seg=self.parameterAsDouble(p,'SEGMENT',c)
         fields=QgsFields()
         for n,ln in (('alignment',254),('sta_start',80),('sta_end',80),('z_source',80)): fields.append(QgsField(n,QVariant.String,len=ln))
-        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.LineStringZ); root=ET.parse(path).getroot()
+        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.Type.LineStringZ); root=safe_xml.parse_root(path)
         # Build sampled vertical profiles keyed by alignment name. ProfAlign
         # is a flat PVI/ParaCurve/CircCurve sequence -- see core.read_vertical_profile.
         # A ProfAlign's own `name` is a profile label (e.g. "frl" = finish
@@ -181,8 +182,8 @@ class SurfaceBoundaryAlgorithm(QgsProcessingAlgorithm):
     def groupId(self): return 'surface_extraction'
     def shortHelpString(self): return 'Extracts the outer boundary of the LandXML TIN as a polygon/line.'
     def initAlgorithm(self,config=None):
-        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self); self.addParameter(QgsProcessingParameterString('SURFACE','Surface name (blank = first)',defaultValue='',optional=True))
-        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Surface boundary',type=QgsProcessing.TypeVectorLine))
+        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.Behavior.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self); self.addParameter(QgsProcessingParameterString('SURFACE','Surface name (blank = first)',defaultValue='',optional=True))
+        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Surface boundary',type=QgsProcessing.SourceType.TypeVectorLine))
     def processAlgorithm(self,p,c,fb):
         path=self.parameterAsFile(p,'INPUT',c); surf=self.parameterAsString(p,'SURFACE',c) or None; xyz,faces,meta=read_tin(path,surf); m,out,src,tp=_transform_params(p,c,self); xyz=transform_vertices(xyz,method=m,**tp)
         edges={}
@@ -200,7 +201,7 @@ class SurfaceBoundaryAlgorithm(QgsProcessingAlgorithm):
                 if not nxts: break
                 nxt=nxts[0]; unused.discard((min(cur,nxt),max(cur,nxt))); line.append(nxt); prev,cur=cur,nxt
             lines.append(line)
-        fields=QgsFields(); fields.append(QgsField('surface',QVariant.String,len=254)); sink,dest=_sink(self,p,c,fields,QgsWkbTypes.LineString)
+        fields=QgsFields(); fields.append(QgsField('surface',QVariant.String,len=254)); sink,dest=_sink(self,p,c,fields,QgsWkbTypes.Type.LineString)
         for line in lines:
             f=QgsFeature(fields); f.setGeometry(QgsGeometry.fromPolylineXY([QgsPointXY(xyz[i,0],xyz[i,1]) for i in line])); f.setAttribute('surface',meta['surface_name']); sink.addFeature(f)
         return {'OUTPUT':dest}
@@ -213,13 +214,13 @@ class StationPointsAlgorithm(QgsProcessingAlgorithm):
     def groupId(self): return 'road_design_extraction'
     def shortHelpString(self): return 'Creates points along LandXML alignments at a user-defined station interval.'
     def initAlgorithm(self,config=None):
-        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self); self.addParameter(number_param('INTERVAL', 'Station interval', 20, .01, 100000, decimals=2)); self.addParameter(QgsProcessingParameterBoolean('INCLUDE_ENDPOINT','Include alignment end station',defaultValue=True))
-        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Station points',type=QgsProcessing.TypeVectorPoint))
+        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.Behavior.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self); self.addParameter(number_param('INTERVAL', 'Station interval', 20, .01, 100000, decimals=2)); self.addParameter(QgsProcessingParameterBoolean('INCLUDE_ENDPOINT','Include alignment end station',defaultValue=True))
+        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Station points',type=QgsProcessing.SourceType.TypeVectorPoint))
     def processAlgorithm(self,p,c,fb):
         path=self.parameterAsFile(p,'INPUT',c); m,out,src,tp=_transform_params(p,c,self); alignment_filter=self.parameterAsString(p,'ALIGNMENT',c).strip(); include_end=self.parameterAsBoolean(p,'INCLUDE_ENDPOINT',c)
         fields=QgsFields()
         for n in ('alignment','station','bearing_deg'): fields.append(QgsField(n,QVariant.Double if n!='alignment' else QVariant.String,len=254))
-        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.Point); interval=self.parameterAsDouble(p,'INTERVAL',c)
+        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.Type.Point); interval=self.parameterAsDouble(p,'INTERVAL',c)
         for name,desc,sta0,sta1,parts,_ in _alignment_parts(path,5.0,alignment_filter):
             pts=[pt for part in parts for pt in (part if not [] else part)]
             if len(pts)<2: continue
@@ -247,12 +248,12 @@ class CrossSectionsAlgorithm(QgsProcessingAlgorithm):
     def groupId(self): return 'road_design_extraction'
     def shortHelpString(self): return 'Extracts LandXML CrossSect geometry as line features. Supports PntList3D/PntList2D-style section point lists and station attributes where present. CrossSect records that only carry station-relative DesignCrossSectSurf/CrossSectPnt design-template geometry (pavement/subbase layers etc.), without an absolute-coordinate point list, are skipped and reported in Processing messages rather than being placed at a fabricated position.'
     def initAlgorithm(self,config=None):
-        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self)
-        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Cross-section lines',type=QgsProcessing.TypeVectorLine))
+        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.Behavior.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self)
+        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Cross-section lines',type=QgsProcessing.SourceType.TypeVectorLine))
     def processAlgorithm(self,p,c,fb):
         path=self.parameterAsFile(p,'INPUT',c); m,out,src,tp=_transform_params(p,c,self); alignment_filter=self.parameterAsString(p,'ALIGNMENT',c).strip()
         fields=QgsFields(); fields.append(QgsField('alignment',QVariant.String,len=254)); fields.append(QgsField('station',QVariant.Double)); fields.append(QgsField('point_count',QVariant.Int))
-        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.LineString); root=ET.parse(path).getroot(); count=0
+        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.Type.LineString); root=safe_xml.parse_root(path); count=0
         design_only=0
         for cs in root.findall('.//l:CrossSect',NS):
             if fb.isCanceled(): break
@@ -296,12 +297,12 @@ class GenericLinesAlgorithm(QgsProcessingAlgorithm):
     def groupId(self): return 'surface_extraction'
     def shortHelpString(self): return 'Extracts 3D polyline-style FeatureLine or Breakline records from LandXML when present. Unsupported structures are skipped with a Processing message.'
     def initAlgorithm(self,config=None):
-        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self); self.addParameter(QgsProcessingParameterString('NAME_FILTER','Feature/breakline name (blank = all)',defaultValue='',optional=True))
-        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Output lines',type=QgsProcessing.TypeVectorLine))
+        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.Behavior.File,fileFilter='LandXML (*.xml *.landxml)')); _param_common(self); self.addParameter(QgsProcessingParameterString('NAME_FILTER','Feature/breakline name (blank = all)',defaultValue='',optional=True))
+        self.addParameter(QgsProcessingParameterFeatureSink('OUTPUT','Output lines',type=QgsProcessing.SourceType.TypeVectorLine))
     def processAlgorithm(self,p,c,fb):
         path=self.parameterAsFile(p,'INPUT',c); m,out,src,tp=_transform_params(p,c,self); name_filter=self.parameterAsString(p,'NAME_FILTER',c).strip()
         fields=QgsFields(); fields.append(QgsField('name',QVariant.String,len=254)); fields.append(QgsField('type',QVariant.String,len=40))
-        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.LineStringZ); root=ET.parse(path).getroot(); tags=['FeatureLine'] if self.mode=='FEATURE' else ['Breakline']
+        sink,dest=_sink(self,p,c,fields,QgsWkbTypes.Type.LineStringZ); root=safe_xml.parse_root(path); tags=['FeatureLine'] if self.mode=='FEATURE' else ['Breakline']
         seen=0
         for tag in tags:
             for node in root.findall('.//l:'+tag,NS):

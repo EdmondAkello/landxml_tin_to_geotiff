@@ -14,7 +14,7 @@ from qgis.core import QgsProcessingParameterNumber
 
 def number_param(name, description, default_value, min_value, max_value,
                   decimals=None, optional=False,
-                  param_type=QgsProcessingParameterNumber.Double):
+                  param_type=QgsProcessingParameterNumber.Type.Double):
     p = QgsProcessingParameterNumber(
         name, description,
         type=param_type,

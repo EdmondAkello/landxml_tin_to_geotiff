@@ -1,4 +1,4 @@
-import os, math, xml.etree.ElementTree as ET
+import os, math
 import numpy as np
 from osgeo import ogr, osr, gdal
 from qgis.core import *
@@ -6,6 +6,7 @@ from qgis.PyQt.QtCore import QVariant
 from .core import read_tin, transform_vertices, rasterize_tin, write_geotiff, read_vertical_profile
 from .alignment_algorithm import read_alignments
 from .params import number_param
+from . import safe_xml
 NS={'l':'http://www.landxml.org/schema/LandXML-1.2'}
 
 
@@ -13,8 +14,12 @@ def _ogr_srs(crs):
     s=osr.SpatialReference(); s.ImportFromWkt(crs.toWkt()); return s
 
 def _delete_layer(ds,name):
-    try: ds.DeleteLayer(name)
-    except Exception: pass
+    # Idempotent "ensure clean slate" delete: check first rather than
+    # attempting the delete and silently swallowing any failure, so a
+    # genuine GDAL/OGR error here isn't masked -- only "layer doesn't
+    # exist yet" is treated as a normal, expected outcome.
+    if ds.GetLayerByName(name) is not None:
+        ds.DeleteLayer(name)
 
 def _fld(layer,name,typ=ogr.OFTString): layer.CreateField(ogr.FieldDefn(name,typ))
 
@@ -51,7 +56,7 @@ class CompleteRoadDesignAlgorithm(QgsProcessingAlgorithm):
     def groupId(self): return 'road_design_extraction'
     def shortHelpString(self): return 'Export a configurable LandXML road design package with alignment, profile, station, cross-section, feature-line, breakline, surface-boundary, DEM and contour outputs.'
     def initAlgorithm(self,config=None):
-        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.File,fileFilter='LandXML (*.xml *.landxml)'))
+        self.addParameter(QgsProcessingParameterFile('INPUT','LandXML file',behavior=QgsProcessingParameterFile.Behavior.File,fileFilter='LandXML (*.xml *.landxml)'))
         _param_common_local(self)
         self.addParameter(QgsProcessingParameterString('ALIGNMENT','Alignment name (blank = all)',defaultValue='',optional=True))
         self.addParameter(QgsProcessingParameterString('SURFACE','TIN surface name (blank = first)',defaultValue='',optional=True))
@@ -75,7 +80,7 @@ class CompleteRoadDesignAlgorithm(QgsProcessingAlgorithm):
         flags={k:self.parameterAsBoolean(p,k,c) for k in ['INCLUDE_ALIGNMENTS','INCLUDE_CENTERLINES','INCLUDE_PROFILES','INCLUDE_STATIONS','INCLUDE_CROSSSECTIONS','INCLUDE_FEATURELINES','INCLUDE_BREAKLINES','INCLUDE_SURFACE_BOUNDARY','INCLUDE_DEM','INCLUDE_CONTOURS']}
         base=os.path.splitext(os.path.basename(path))[0]; gpkg=os.path.join(out,base+'_GIS.gpkg'); srs=_ogr_srs(crs)
         ds=ogr.GetDriverByName('GPKG').CreateDataSource(gpkg)
-        root=ET.parse(path).getroot()
+        root=safe_xml.parse_root(path)
         al,uns=read_alignments(path,align_seg,feedback=fb,cancel=fb.isCanceled)
         if alignment_filter: al=[a for a in al if a['name']==alignment_filter]
 

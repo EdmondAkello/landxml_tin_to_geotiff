@@ -1,6 +1,7 @@
 import os
 import math
-import xml.etree.ElementTree as ET
+
+from . import safe_xml
 
 from qgis.core import (
     QgsProcessing,
@@ -162,7 +163,7 @@ def _line_points(line):
 
 
 def read_alignments(path, segment_length=5.0, feedback=None, cancel=None):
-    root = ET.parse(path).getroot()
+    root = safe_xml.parse_root(path)
     alignments = root.findall(".//l:Alignments/l:Alignment", NS)
     if not alignments:
         # Some exporters place Alignment elements outside an Alignments wrapper.
@@ -261,7 +262,7 @@ class LandXMLAlignmentsAlgorithm(QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(QgsProcessingParameterFile(
-            self.INPUT, "LandXML file", behavior=QgsProcessingParameterFile.File,
+            self.INPUT, "LandXML file", behavior=QgsProcessingParameterFile.Behavior.File,
             fileFilter="LandXML (*.xml *.landxml)"))
         self.addParameter(QgsProcessingParameterEnum(
             self.METHOD, "Coordinate interpretation", options=METHODS, defaultValue=0))
@@ -277,7 +278,7 @@ class LandXMLAlignmentsAlgorithm(QgsProcessingAlgorithm):
             self.SEGMENT, "Maximum curve segment length (map units)", 5.0,
             0.01, 10000.0, decimals=3))
         self.addParameter(QgsProcessingParameterFeatureSink(
-            self.OUTPUT, "Output alignment lines", type=QgsProcessing.TypeVectorLine,
+            self.OUTPUT, "Output alignment lines", type=QgsProcessing.SourceType.TypeVectorLine,
             defaultValue=None))
 
     def processAlgorithm(self, parameters, context, feedback):
@@ -318,7 +319,7 @@ class LandXMLAlignmentsAlgorithm(QgsProcessingAlgorithm):
         fields.append(QgsField("sta_start", QVariant.String, len=80))
         fields.append(QgsField("sta_end", QVariant.String, len=80))
         sink, dest_id = self.parameterAsSink(parameters, self.OUTPUT, context, fields,
-                                             QgsWkbTypes.LineString, out_crs)
+                                             QgsWkbTypes.Type.LineString, out_crs)
         if sink is None:
             raise QgsProcessingException("Could not create output vector layer.")
 

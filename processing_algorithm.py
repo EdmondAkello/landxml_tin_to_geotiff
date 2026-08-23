@@ -91,7 +91,7 @@ class LandXMLTinToGeoTIFFAlgorithm(QgsProcessingAlgorithm):
         return QIcon(os.path.join(os.path.dirname(__file__), "icon.png"))
 
     def initAlgorithm(self, config=None):
-        p = QgsProcessingParameterFile(self.INPUT, self.tr("LandXML file"), behavior=QgsProcessingParameterFile.File, fileFilter="LandXML (*.xml *.landxml)")
+        p = QgsProcessingParameterFile(self.INPUT, self.tr("LandXML file"), behavior=QgsProcessingParameterFile.Behavior.File, fileFilter="LandXML (*.xml *.landxml)")
         self.addParameter(p)
         self.addParameter(QgsProcessingParameterString(self.SURFACE, self.tr("TIN surface name"), defaultValue="", optional=True))
         self.addParameter(number_param(self.RESOLUTION, self.tr("Pixel size"), 5.0, 0.01, 10000.0, decimals=3))
