@@ -13,9 +13,8 @@ folder, e.g. `Sample Landxml/`, when testing:
   (`BOTTOM`, `TOP`, and an intermediate design surface) plus a ~16.7 km
   design alignment.
 
-Both are under GitHub's 100 MB limit but big enough to bloat history if
-committed directly — use Git LFS instead to version them alongside the
-source.
+Both are under GitHub's 100 MB hard limit, but large enough to bloat the
+repository's history, which is why they're kept out of it.
 
 ## Suggested workflow
 
